@@ -78,7 +78,7 @@ namespace DotnetSpider.Sample.samples
         private string GetImagePath(string tag, string subject, string imageUrl)
         {
             string fileName = imageUrl.Substring(imageUrl.LastIndexOf('/') + 1, imageUrl.Length - imageUrl.LastIndexOf('/') - 1);
-            string tagPath = Environment.CurrentDirectory + "\\Pictures" + "\\" + tag;
+            string tagPath = Environment.CurrentDirectory + "\\优美网-国产" + "\\" + tag;
 
             CreateDirByPath(tagPath);
 
