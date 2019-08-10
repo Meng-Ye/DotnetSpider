@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using DotnetSpider.DataFlow;
 using DotnetSpider.DataFlow.Parser;
 using DotnetSpider.Downloader;
+using DotnetSpider.Selector;
+using System.Linq;
 
 namespace DotnetSpider.Sample.samples
 {
@@ -13,7 +15,7 @@ namespace DotnetSpider.Sample.samples
 		public YouMeiDetailSpider()
 		{
 			//只处理详细页数据其他页数据交给其他类型处理器 http://www.umei.cc/p/gaoqing/cn/188495.htm
-			Required = DataParserHelper.CheckIfRequiredByRegex("^((https|http)?:\\/\\/)www.umei.cc\\/p\\/gaoqing\\/cn\\/\\d{3,7}.htm$$");
+			Required = DataParserHelper.CheckIfRequiredByRegex("^((https|http)?:\\/\\/)www.umei.cc\\/p\\/gaoqing\\/cn\\/\\d{3,7}.htm$", "^((https|http)?:\\/\\/)www.umei.cc\\/p\\/gaoqing\\/cn\\/\\d{3,7}_\\d{1,3}.htm$");
 			//Follow = XpathFollow(".");
 		}
 
@@ -29,36 +31,29 @@ namespace DotnetSpider.Sample.samples
 				int.TryParse(elArry[1], out int pages);
 				if (pages > 1)
 				{
-					for (int i = 2; i < pages; i++)
+					var requests = new List<Request>();
+					for (int i = 2; i <= pages; i++)
 					{
-						context.AddExtraRequests(new Request() { OwnerId = context.Response.Request.OwnerId, Url = context.Response.Request.Url.Replace(".htm", $"{i}_.htm") }); ;
+						var request = new Request() { OwnerId = context.Response.Request.OwnerId, Url = context.Response.Request.Url.Replace(".htm", $"_{i}.htm") };
+						request.AddProperty("tag", context.Selectable.XPath(".//title").GetValue());
+						requests.Add(request);
 					}
+					context.AddExtraRequests(requests.ToArray()); ;
 				}
 			}
-
 			var imgNodes = context.Selectable.XPath(".//div[@id='ArticleId0']//p//a//img").Nodes();
 			foreach (var nodes in imgNodes)
 			{
 				var url = nodes.XPath("@src").GetValue();
-				var name = nodes.XPath("@alt").GetValue();
-				tags.Add(url, name);
-				Console.WriteLine("url:" + url + " - name:" + name);
+				var newNode = (nodes as Selectable).Elements.FirstOrDefault();
+				var alt = new Selectable(newNode.OuterHtml.Replace("alt=\"\"", ""));
+				var name = alt.Regex("alt=\"[\u4e00-\u9fa5]+\"").GetValue().Replace("alt=\"", "").Replace("\"", "");
+				var request = new Request() { Url = url, OwnerId = context.Response.Request.OwnerId };
+				request.AddProperty("tag", context.Selectable.XPath(".//div[@class='position gray']//div[1]//a[2]").GetValue());
+				request.AddProperty("referer", context.Response.Request.GetProperty("referer") ?? url);
+				request.AddProperty("subject", name);
+				ImageDownloader.GetInstance().AddRequest(request);
 			}
-			var requests = new List<Request>();
-			foreach (var tag in tags)
-			{
-				var request = new Request
-				{
-					Url = tag.Key,
-					OwnerId = context.Response.Request.OwnerId
-				};
-				request.AddProperty("tag", tag.Value);
-				request.AddProperty("referer", context.Response.Request.GetProperty("referer") ?? tag.Key);
-				request.AddProperty("subject", context.Selectable.XPath(".//title").GetValue());
-				requests.Add(request);
-				//ImageDownloader.GetInstance().AddRequest(request);
-			}
-			context.AddExtraRequests(requests.ToArray());
 			return Task.FromResult(DataFlowResult.Success);
 		}
 	}
