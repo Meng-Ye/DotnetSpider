@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using DotnetSpider.Downloader;
@@ -45,6 +46,7 @@ namespace DotnetSpider.DataFlow.Parser
 		/// <returns></returns>
 		public static Func<Request, bool> CheckIfRequiredByRegex(params string[] patterns)
 		{
+			string className = new StackTrace().GetFrame(1).GetMethod().ReflectedType.FullName;
 			return request =>
 			{
 				foreach (var pattern in patterns)
@@ -54,7 +56,11 @@ namespace DotnetSpider.DataFlow.Parser
 						return true;
 					}
 				}
-
+				if (className != "DotnetSpider.Sample.samples.YouMeiSpider")
+				{
+					Console.WriteLine("ERROR" + request.Url);
+				}
+				//Console.WriteLine(request.Url + "\t" + className);
 				return false;
 			};
 		}

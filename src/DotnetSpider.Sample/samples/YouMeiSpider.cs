@@ -11,7 +11,6 @@ namespace DotnetSpider.Sample.samples
 {
 	public class YouMeiSpider : DataParser
 	{
-		int dd = 0;
 		public YouMeiSpider()
 		{
 			//只处理第父页数据其他页数据交给其他类型处理器
@@ -29,8 +28,6 @@ namespace DotnetSpider.Sample.samples
 				var name = node.XPath(".//div[@class='ListTit']").GetValue();
 				tags.Add(url, name);
 			}
-			dd += tags.Count;
-			Console.WriteLine(dd);
 			var requests = new List<Request>();
 			foreach (var tag in tags)
 			{
@@ -39,6 +36,7 @@ namespace DotnetSpider.Sample.samples
 					Url = tag.Key,
 					OwnerId = context.Response.Request.OwnerId
 				};
+				//Console.WriteLine(tag.Key);
 				request.AddProperty("tag", tag.Value);
 				request.AddProperty("referer", context.Response.Request.GetProperty("referer") ?? tag.Key);
 				request.AddProperty("subject", context.Selectable.XPath(".//title").GetValue());

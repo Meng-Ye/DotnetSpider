@@ -48,13 +48,20 @@ namespace DotnetSpider.Sample.samples
 					Console.ForegroundColor = ConsoleColor.White;
 					return true;
 				}
-
 				HttpClient.DefaultRequestHeaders.Referrer = new Uri(request.Properties["referer"]);
 				var content = await HttpClient.GetByteArrayAsync(request.Url);
+				if (content.Length == 2647)
+				{
+					while (content.Length == 2647)
+					{
+						content = await HttpClient.GetByteArrayAsync(request.Url);
+					}
+				}
 				FileStream fs = new FileStream(savePath, FileMode.CreateNew);
-				fs.Write(content, 0, content.Length);
+				await fs.WriteAsync(content, 0, content.Length);
+				fs.Close();
 				Console.ForegroundColor = ConsoleColor.Green;
-				Console.WriteLine($"已成功下载{_allCount++}张图片");
+				Console.WriteLine($"已成功下载{++_allCount}张图片");
 				Console.ForegroundColor = ConsoleColor.White;
 				return true;
 			}
